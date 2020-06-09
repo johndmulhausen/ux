@@ -1,5 +1,5 @@
 import React from 'react';
-import { PoweredBy, Screen, ScreenBody, ScreenFooter, Title } from '@blockstack/connect';
+import { Screen, ScreenBody, ScreenFooter, Title } from '@blockstack/connect';
 import { Box, PseudoBox, Text } from '@blockstack/ui';
 import { ScreenHeader } from '@components/connected-screen-header';
 import { Accounts } from '@components/accounts';
@@ -12,6 +12,7 @@ import { selectCurrentWallet, selectIdentities } from '@store/wallet/selectors';
 import { ConfigApp } from '@blockstack/keychain/wallet';
 import { Wallet } from '@blockstack/keychain';
 import { gaiaUrl } from '@common/constants';
+import { ExtensionButton } from '@components/extension-button';
 import {
   CHOOSE_ACCOUNT_CHOSEN,
   CHOOSE_ACCOUNT_REUSE_WARNING,
@@ -124,7 +125,7 @@ export const ChooseAccount: React.FC<ChooseAccountProps> = ({ next }) => {
           ]}
         />
         <ScreenFooter>
-          <PoweredBy />
+          <ExtensionButton />
         </ScreenFooter>
       </Screen>
     </Box>
