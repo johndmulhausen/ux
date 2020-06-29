@@ -238,3 +238,25 @@ export const validateSubdomain = async (
 
   return null;
 };
+
+export const promiseAny = async (values: Promise<string>[]): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    let hasResolved = false;
+    let rejects = 0;
+    const resolveOnce = (val: string) => {
+      if (!hasResolved) {
+        hasResolved = true;
+        resolve(val);
+      }
+    };
+    const rejectIterable = () => {
+      rejects = rejects + 1;
+      if (rejects === values.length) {
+        reject();
+      }
+    };
+    for (const value of values) {
+      value.then(res => resolveOnce(res)).catch(() => rejectIterable());
+    }
+  });
+};

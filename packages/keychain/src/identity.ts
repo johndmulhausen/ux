@@ -8,6 +8,7 @@ import {
   DEFAULT_GAIA_HUB,
   getHubInfo,
   connectToGaiaHubWithConfig,
+  findProfileURL,
 } from './utils/gaia';
 import IdentityAddressOwnerNode from './nodes/identity-address-owner-node';
 import { Profile, fetchProfile, DEFAULT_PROFILE, signAndUploadProfile } from './profiles';
@@ -111,10 +112,8 @@ export class Identity {
     return appsNode.getAppPrivateKey(appDomain);
   }
 
-  // eslint-disable-next-line @typescript-eslint/require-await
   async profileUrl(gaiaUrl: string) {
-    // future proofing for code that may require network requests to find profile
-    return `${gaiaUrl}${this.address}/profile.json`;
+    return findProfileURL({ gaiaUrl, identity: this });
   }
 
   async fetchNames() {

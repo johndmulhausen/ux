@@ -3,6 +3,9 @@ import { getPublicKeyFromPrivate } from 'blockstack/lib/keys';
 import { randomBytes } from 'blockstack/lib/encryption/cryptoRandom';
 import { ecPairToAddress, hexStringToECPair } from 'blockstack';
 import { GaiaHubConfig } from 'blockstack/lib/storage/hub';
+import Identity from '../identity';
+import { resolve } from 'dns';
+import { promiseAny } from '.';
 
 export const DEFAULT_GAIA_HUB = 'https://gaia.blockstack.org/hub/';
 
@@ -112,4 +115,28 @@ const makeGaiaAuthToken = ({ hubInfo, privateKey, gaiaHubUrl }: ConnectToGaiaOpt
   }
   const token = new TokenSigner('ES256K', privateKey).sign(payload);
   return `v1:${token}`;
+};
+
+const returnURLIfOk = async (url: string): Promise<string> => {
+  const res = await fetch(url);
+  if (res.ok) {
+    return url;
+  }
+  throw new Error('Not found.');
+};
+
+export const findProfileURL = async ({
+  gaiaUrl,
+  identity,
+}: {
+  gaiaUrl: string;
+  identity: Identity;
+}) => {
+  const attempts = [
+    `${gaiaUrl}${identity.address}/profile.json`,
+    `${gaiaUrl}${identity.address}/0/profile.json`,
+    `${gaiaUrl}${identity.address}/1/profile.json`,
+  ];
+  const url = await promiseAny(attempts.map(u => returnURLIfOk(u)));
+  return url;
 };
