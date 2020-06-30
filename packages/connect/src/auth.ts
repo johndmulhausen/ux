@@ -14,6 +14,7 @@ export interface AuthOptions {
   redirectTo?: string;
   manifestPath?: string;
   finished?: (payload: FinishedData) => void;
+  cancelled?: () => void;
   authOrigin?: string;
   sendToSignIn?: boolean;
   userSession?: UserSession;
@@ -27,6 +28,7 @@ export const authenticate = async ({
   redirectTo = '/',
   manifestPath,
   finished,
+  cancelled,
   authOrigin,
   sendToSignIn = false,
   userSession,
@@ -75,7 +77,7 @@ export const authenticate = async ({
     skipPopupFallback: !!window.BlockstackProvider,
   });
 
-  setupListener({ popup, authRequest, finished, authURL, userSession });
+  setupListener({ popup, authRequest, finished, authURL, userSession, cancelled });
 };
 
 interface FinishedEventData {
@@ -88,17 +90,28 @@ interface ListenerParams {
   popup: Window | null;
   authRequest: string;
   finished?: (payload: FinishedData) => void;
+  cancelled?: () => void;
   authURL: URL;
   userSession: UserSession;
 }
 
-const setupListener = ({ popup, authRequest, finished, authURL, userSession }: ListenerParams) => {
+const setupListener = ({
+  popup,
+  authRequest,
+  finished,
+  cancelled,
+  authURL,
+  userSession,
+}: ListenerParams) => {
+  let lastPong: number | null = null;
+
   const interval = setInterval(() => {
     if (popup) {
       try {
         popup.postMessage(
           {
             authRequest,
+            method: 'ping',
           },
           authURL.origin
         );
@@ -107,11 +120,21 @@ const setupListener = ({ popup, authRequest, finished, authURL, userSession }: L
         clearInterval(interval);
       }
     }
+    if (lastPong && new Date().getTime() - lastPong > 200) {
+      cancelled && cancelled();
+      clearInterval(interval);
+    }
   }, 100);
 
   const receiveMessage = async (event: MessageEvent) => {
-    const data: FinishedEventData = event.data;
-    if (data.authRequest === authRequest) {
+    const authRequestMatch = event.data.authRequest === authRequest;
+    if (!authRequestMatch) {
+      return;
+    }
+    if (event.data.method === 'pong') {
+      lastPong = new Date().getTime();
+    } else {
+      const data: FinishedEventData = event.data;
       if (finished) {
         window.focus();
         const { authResponse } = data;
@@ -127,7 +150,6 @@ const setupListener = ({ popup, authRequest, finished, authURL, userSession }: L
   };
 
   const receiveMessageCallback = (event: MessageEvent) => {
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     receiveMessage(event);
   };
 
